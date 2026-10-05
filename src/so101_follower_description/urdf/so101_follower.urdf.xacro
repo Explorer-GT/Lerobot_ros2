@@ -3,7 +3,10 @@
 <!-- Onshape https://cad.onshape.com/documents/7715cc284bb430fe6dab4ffd/w/4fd0791b683777b02f8d975a/e/826c553ede3b7592eb9ca800 -->
 <robot name="so101_follower" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <xacro:include filename="$(find so101_hw_interface)/urdf/so101_follower.urdf" />
+  <xacro:arg name="use_fake_hardware" default="false" />
+  <xacro:unless value="$(arg use_fake_hardware)">
+    <xacro:include filename="$(find so101_hw_interface)/urdf/so101_follower.urdf" />
+  </xacro:unless>
 
   <!-- World Link -->
   <link name="world"/>

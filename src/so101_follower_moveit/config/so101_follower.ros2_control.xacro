@@ -17,52 +17,36 @@
                 <state_interface name="position">
                   <param name="initial_value">${load_yaml(initial_positions_file)['initial_positions']['shoulder_pan'] if initial_positions_file != '/dev/null' else '0.0'}</param>
                 </state_interface>
-                <state_interface name="velocity"/>
             </joint>
             <joint name="shoulder_lift">
                 <command_interface name="position"/>
                 <state_interface name="position">
                     <param name="initial_value">${load_yaml(initial_positions_file)['initial_positions']['shoulder_lift'] if initial_positions_file != '/dev/null' else '0.0'}</param>
                 </state_interface>
-                <state_interface name="velocity"/>
             </joint>
             <joint name="elbow_flex">
                 <command_interface name="position"/>
                 <state_interface name="position">
                     <param name="initial_value">${load_yaml(initial_positions_file)['initial_positions']['elbow_flex'] if initial_positions_file != '/dev/null' else '0.0'}</param>
                 </state_interface>
-                <state_interface name="velocity"/>
             </joint>
             <joint name="wrist_flex">
                 <command_interface name="position"/>
                 <state_interface name="position">
                     <param name="initial_value">${load_yaml(initial_positions_file)['initial_positions']['wrist_flex'] if initial_positions_file != '/dev/null' else '0.0'}</param>
                 </state_interface>
-                <state_interface name="velocity"/>
             </joint>
             <joint name="wrist_roll">
                 <command_interface name="position"/>
                 <state_interface name="position">
                     <param name="initial_value">${load_yaml(initial_positions_file)['initial_positions']['wrist_roll'] if initial_positions_file != '/dev/null' else '0.0'}</param>
                 </state_interface>
-                <state_interface name="velocity"/>
             </joint>
-            <joint name="wrist_pitch">
-                <command_interface name="position"/>
-                <state_interface name="position"/>
-                <state_interface name="velocity"/>
-            </joint>
-            <joint name="wrist_yaw">
-                <command_interface name="position"/>
-                <state_interface name="position"/>
-                <state_interface name="velocity"/>
-            </joint>
-            <joint name="gripper_jaw">
+            <joint name="gripper">
                 <command_interface name="position"/>
                 <state_interface name="position">
                     <param name="initial_value">${load_yaml(initial_positions_file)['initial_positions']['gripper'] if initial_positions_file != '/dev/null' else '0.0'}</param>
                 </state_interface>
-                <state_interface name="velocity"/>
             </joint>
         </ros2_control>
     </xacro:macro>

@@ -13,8 +13,4 @@
         <xacro:so101_follower_ros2_control name="FakeSystem" initial_positions_file="$(find so101_follower_moveit)/config/initial_positions.yaml"/>
     </xacro:if>
 
-    <xacro:unless value="$(arg use_fake_hardware)">
-        <xacro:so101_follower_ros2_control name="so101_follower"/>
-    </xacro:unless>
-
 </robot>
