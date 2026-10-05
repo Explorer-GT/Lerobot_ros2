@@ -1,0 +1,71 @@
+so101_pick_place:
+  ros__parameters:
+    # Units: radians. No verified current hardware joint values were available
+    # during development; zero here means an OFFSET, not the robot's zero pose.
+    # current_state: capture all six measured joints ONCE at startup, then add
+    # these offsets to produce fixed joint-space targets for this single cycle.
+    # absolute: after teaching/confirming poses, replace every value below with
+    # an absolute joint angle and change pose_reference to absolute.
+    pose_reference: current_state
+    velocity_scaling: 0.1
+    acceleration_scaling: 0.1
+    planning_time: 5.0
+    state_timeout: 5.0
+    server_timeout: 10.0
+    # Targets AND all planned trajectory points must stay within this distance
+    # of the startup joint state. This first version allows at most 0.1 rad.
+    max_joint_delta: 0.1
+
+    # TODO(manual confirmation): all nine poses are commissioning examples.
+    # Confirm collision clearance, approach/lift directions and object contact.
+    # These tiny offsets do not yet define a taught physical pick/place task.
+    poses:
+      home:
+        shoulder_pan: 0.0
+        shoulder_lift: 0.0
+        elbow_flex: 0.0
+        wrist_flex: 0.0
+        wrist_roll: 0.0
+      pre_grasp:
+        shoulder_pan: 0.0
+        shoulder_lift: -0.02
+        elbow_flex: 0.02
+        wrist_flex: 0.0
+        wrist_roll: 0.0
+      grasp:
+        shoulder_pan: 0.0
+        shoulder_lift: -0.03
+        elbow_flex: 0.03
+        wrist_flex: -0.01
+        wrist_roll: 0.0
+      lift:
+        shoulder_pan: 0.0
+        shoulder_lift: -0.01
+        elbow_flex: 0.01
+        wrist_flex: 0.0
+        wrist_roll: 0.0
+      transfer:
+        shoulder_pan: 0.03
+        shoulder_lift: -0.01
+        elbow_flex: 0.01
+        wrist_flex: 0.0
+        wrist_roll: 0.0
+      place:
+        shoulder_pan: 0.03
+        shoulder_lift: -0.03
+        elbow_flex: 0.03
+        wrist_flex: -0.01
+        wrist_roll: 0.0
+      retreat:
+        shoulder_pan: 0.03
+        shoulder_lift: -0.02
+        elbow_flex: 0.02
+        wrist_flex: 0.0
+        wrist_roll: 0.0
+      # TODO(manual confirmation): verify that increasing gripper opens it.
+      # The startup gripper position is only a placeholder for CLOSED;
+      # confirm actual open/closed angles and object width before grasping.
+      gripper_open:
+        gripper: 0.02
+      gripper_closed:
+        gripper: 0.0
