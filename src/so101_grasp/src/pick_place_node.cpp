@@ -4,6 +4,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_ros/buffer.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdlib>
@@ -60,7 +61,8 @@ public:
   explicit PickPlace(const rclcpp::Node::SharedPtr & node)
   : node_(node),
     state_timeout_(positiveParameter(node, "state_timeout")),
-    max_delta_(positiveParameter(node, "max_joint_delta")),
+    max_stage_joint_delta_(positiveParameter(node, "max_stage_joint_delta")),
+    trajectory_margin_(positiveParameter(node, "trajectory_margin")),
     tf_buffer_(std::make_shared<tf2_ros::Buffer>(node->get_clock())),
     arm_(node, "arm", tf_buffer_,
       rclcpp::Duration::from_seconds(positiveParameter(node, "server_timeout"))),
@@ -144,11 +146,19 @@ private:
     }
   }
 
-  void validateNearby(const std::string & joint, double value) const
+  void validateStageTarget(const JointTarget & current, const JointTarget & target) const
   {
-    validatePosition(joint, value);
-    if (std::abs(value - baseline_.at(joint)) > max_delta_ + 1e-9) {
-      throw std::runtime_error("Position outside startup neighborhood for " + joint);
+    for (const auto & [joint, value] : target) {
+      validatePosition(joint, value);
+      const double delta = std::abs(value - current.at(joint));
+      RCLCPP_INFO(node_->get_logger(),
+        "Stage joint %s: current=%.6f target=%.6f delta=%.6f rad",
+        joint.c_str(), current.at(joint), value, delta);
+      if (delta > max_stage_joint_delta_) {
+        throw std::runtime_error("stage_validation: " + joint + " delta=" +
+          std::to_string(delta) + " exceeds max_stage_joint_delta=" +
+          std::to_string(max_stage_joint_delta_));
+      }
     }
   }
 
@@ -158,9 +168,12 @@ private:
     validateGroup(gripper_, kGripperJoints);
     const double velocity = positiveParameter(node_, "velocity_scaling");
     const double acceleration = positiveParameter(node_, "acceleration_scaling");
-    if (velocity > 0.1 || acceleration > 0.1 || max_delta_ > 0.1) {
-      throw std::runtime_error("v1 requires scaling <= 0.1 and max_joint_delta <= 0.1 rad");
+    if (velocity > 0.1 || acceleration > 0.1) {
+      throw std::runtime_error("Fake-hardware tests require velocity/acceleration scaling <= 0.1");
     }
+    RCLCPP_INFO(node_->get_logger(),
+      "Safety parameters: max_stage_joint_delta=%.6f rad, trajectory_margin=%.6f rad",
+      max_stage_joint_delta_, trajectory_margin_);
     const double planning_time = positiveParameter(node_, "planning_time");
     for (auto * group : {&arm_, &gripper_}) {
       group->setMaxVelocityScalingFactor(velocity);
@@ -174,19 +187,22 @@ private:
     if (reference != "current_state" && reference != "absolute") {
       throw std::runtime_error("pose_reference must be current_state or absolute");
     }
+    RCLCPP_INFO(node_->get_logger(), "Pose reference: %s", reference.c_str());
     state_monitor_.startStateMonitor("joint_states");
     if (!state_monitor_.waitForCompleteState(state_timeout_)) {
       throw std::runtime_error("current_state: incomplete joint_states at startup");
     }
     const auto initial = measuredState();
+    JointTarget startup_reference;
     for (const auto & joint : initial->getVariableNames()) {
-      baseline_.emplace(joint, initial->getVariablePosition(joint));
+      startup_reference.emplace(joint, initial->getVariablePosition(joint));
       RCLCPP_INFO(node_->get_logger(), "Startup joint %s = %.6f rad",
-        joint.c_str(), baseline_.at(joint));
+        joint.c_str(), startup_reference.at(joint));
     }
 
-    // Resolve every pose before the first movement. Never recapture a baseline
-    // between steps: HOME at the end must equal HOME at the beginning.
+    // Resolve every absolute target before the first movement. The startup
+    // reference is used ONLY to resolve current_state offsets once, so HOME
+    // at the end equals HOME at the beginning. It never limits absolute motion.
     for (const auto & step : kSequence) {
       if (targets_.count(step.pose) != 0) {
         continue;
@@ -202,19 +218,19 @@ private:
           throw std::runtime_error("Missing " + joint + " in pose " + step.pose);
         }
         if (reference == "current_state") {
-          values.at(joint) += baseline_.at(joint);
+          values.at(joint) += startup_reference.at(joint);
         }
-        validateNearby(joint, values.at(joint));
-        RCLCPP_INFO(node_->get_logger(), "Resolved pose %s: %s = %.6f rad",
+        validatePosition(joint, values.at(joint));
+        RCLCPP_INFO(node_->get_logger(), "Resolved absolute pose %s: %s = %.6f rad",
           step.pose, joint.c_str(), values.at(joint));
       }
       targets_.emplace(step.pose, std::move(values));
     }
-    RCLCPP_WARN(node_->get_logger(),
-      "Example poses require manual confirmation, including gripper open/close direction.");
   }
 
-  void validateTrajectory(const MoveGroup::Plan & plan, const std::vector<std::string> & joints)
+  void validateTrajectory(
+    const MoveGroup::Plan & plan, const std::vector<std::string> & joints,
+    const JointTarget & current, const JointTarget & target) const
   {
     const auto & trajectory = plan.trajectory_.joint_trajectory;
     if (trajectory.points.empty() || trajectory.joint_names.size() != joints.size() ||
@@ -224,14 +240,34 @@ private:
     {
       throw std::runtime_error("plan_validation: empty or unexpected trajectory");
     }
-    // A small target can still produce a large planner detour. Reject that
-    // solution before executing, rather than assuming all paths stay nearby.
+    // Check every point against BOTH model limits and a per-joint interval
+    // spanning this stage's measured start and absolute target, plus margin.
     for (const auto & point : trajectory.points) {
       if (point.positions.size() != trajectory.joint_names.size()) {
         throw std::runtime_error("plan_validation: invalid trajectory positions");
       }
       for (std::size_t index = 0; index < point.positions.size(); ++index) {
-        validateNearby(trajectory.joint_names[index], point.positions[index]);
+        const auto & joint = trajectory.joint_names[index];
+        const double value = point.positions[index];
+        validatePosition(joint, value);
+        const double lower = std::min(current.at(joint), target.at(joint)) - trajectory_margin_;
+        const double upper = std::max(current.at(joint), target.at(joint)) + trajectory_margin_;
+        if (value < lower || value > upper) {
+          throw std::runtime_error("plan_validation: " + joint + " position=" +
+            std::to_string(value) + " outside stage interval [" +
+            std::to_string(lower) + ", " + std::to_string(upper) + "]");
+        }
+      }
+      // Optional derivative/effort fields must also be finite and well-formed.
+      for (const auto * values : {&point.velocities, &point.accelerations, &point.effort}) {
+        if (!values->empty() && values->size() != trajectory.joint_names.size()) {
+          throw std::runtime_error("plan_validation: invalid trajectory derivative/effort size");
+        }
+        if (!std::all_of(values->begin(), values->end(),
+            [](double value) {return std::isfinite(value);}))
+        {
+          throw std::runtime_error("plan_validation: non-finite trajectory derivative/effort");
+        }
       }
     }
   }
@@ -239,12 +275,19 @@ private:
   void executeStep(const Step & step)
   {
     auto & group = step.gripper ? gripper_ : arm_;
+    const auto & joints = step.gripper ? kGripperJoints : kArmJoints;
+    const auto & target = targets_.at(step.pose);
+    // Fetch fresh measured joint states at EVERY stage; never use the previous
+    // commanded target as current. Use this same snapshot for all safety checks
+    // and the planning request's start state.
     const auto state = measuredState();
-    for (const auto & joint : state->getVariableNames()) {
-      validateNearby(joint, state->getVariablePosition(joint));
+    JointTarget current;
+    for (const auto & joint : joints) {
+      current.emplace(joint, state->getVariablePosition(joint));
     }
+    validateStageTarget(current, target);
     group.setStartState(*state);
-    if (!group.setJointValueTarget(targets_.at(step.pose))) {
+    if (!group.setJointValueTarget(target)) {
       throw std::runtime_error("setJointValueTarget rejected pose " + std::string(step.pose));
     }
     MoveGroup::Plan plan;
@@ -253,7 +296,7 @@ private:
       throw std::runtime_error("Plan failed: " + moveit::core::error_code_to_string(plan_result) +
         " (" + std::to_string(plan_result.val) + ")");
     }
-    validateTrajectory(plan, step.gripper ? kGripperJoints : kArmJoints);
+    validateTrajectory(plan, joints, current, target);
     if (!rclcpp::ok()) {
       throw std::runtime_error("ROS shutdown before Execute");
     }
@@ -268,12 +311,12 @@ private:
 
   rclcpp::Node::SharedPtr node_;
   double state_timeout_;
-  double max_delta_;
+  double max_stage_joint_delta_;
+  double trajectory_margin_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   MoveGroup arm_;
   MoveGroup gripper_;
   planning_scene_monitor::CurrentStateMonitor state_monitor_;
-  JointTarget baseline_;
   std::map<std::string, JointTarget> targets_;
   std::string stage_{"INITIALIZE"};
 };

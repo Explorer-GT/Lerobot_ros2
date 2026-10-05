@@ -1,24 +1,19 @@
 so101_pick_place:
   ros__parameters:
-    # Units: radians. No verified current hardware joint values were available
-    # during development; zero here means an OFFSET, not the robot's zero pose.
-    # current_state: capture all six measured joints ONCE at startup, then add
-    # these offsets to produce fixed joint-space targets for this single cycle.
-    # absolute: after teaching/confirming poses, replace every value below with
-    # an absolute joint angle and change pose_reference to absolute.
-    pose_reference: current_state
+    # Units: radians. Absolute poses taught with RViz Plan + Execute.
+    # For ROS2 Humble + MoveIt2 fake hardware / RViz testing only.
+    pose_reference: absolute
     velocity_scaling: 0.1
     acceleration_scaling: 0.1
     planning_time: 5.0
     state_timeout: 5.0
     server_timeout: 10.0
-    # Targets AND all planned trajectory points must stay within this distance
-    # of the startup joint state. This first version allows at most 0.1 rad.
-    max_joint_delta: 0.1
+    # Per-stage target distance from the freshly measured state, per joint.
+    max_stage_joint_delta: 2.0
+    # Allowed trajectory overshoot beyond each current-to-target interval.
+    # URDF/MoveIt position limits still apply independently.
+    trajectory_margin: 0.15
 
-    # TODO(manual confirmation): all nine poses are commissioning examples.
-    # Confirm collision clearance, approach/lift directions and object contact.
-    # These tiny offsets do not yet define a taught physical pick/place task.
     poses:
       home:
         shoulder_pan: 0.0
@@ -27,45 +22,42 @@ so101_pick_place:
         wrist_flex: 0.0
         wrist_roll: 0.0
       pre_grasp:
-        shoulder_pan: 0.0
-        shoulder_lift: -0.02
-        elbow_flex: 0.02
-        wrist_flex: 0.0
-        wrist_roll: 0.0
+        shoulder_pan: 0.000005
+        shoulder_lift: 0.932312
+        elbow_flex: -1.154156
+        wrist_flex: 1.788004
+        wrist_roll: 0.000009
       grasp:
         shoulder_pan: 0.0
-        shoulder_lift: -0.03
-        elbow_flex: 0.03
-        wrist_flex: -0.01
+        shoulder_lift: 0.855067
+        elbow_flex: -0.730101
+        wrist_flex: 1.446477
         wrist_roll: 0.0
       lift:
         shoulder_pan: 0.0
-        shoulder_lift: -0.01
-        elbow_flex: 0.01
-        wrist_flex: 0.0
+        shoulder_lift: 0.888777
+        elbow_flex: -1.031116
+        wrist_flex: 1.713782
         wrist_roll: 0.0
       transfer:
-        shoulder_pan: 0.03
-        shoulder_lift: -0.01
-        elbow_flex: 0.01
-        wrist_flex: 0.0
-        wrist_roll: 0.0
+        shoulder_pan: 0.510016
+        shoulder_lift: 0.882479
+        elbow_flex: -1.032558
+        wrist_flex: 1.704936
+        wrist_roll: -0.002473
       place:
-        shoulder_pan: 0.03
-        shoulder_lift: -0.03
-        elbow_flex: 0.03
-        wrist_flex: -0.01
-        wrist_roll: 0.0
+        shoulder_pan: 0.510016
+        shoulder_lift: 0.858567
+        elbow_flex: -0.727040
+        wrist_flex: 1.451906
+        wrist_roll: -0.002473
       retreat:
-        shoulder_pan: 0.03
-        shoulder_lift: -0.02
-        elbow_flex: 0.02
-        wrist_flex: 0.0
-        wrist_roll: 0.0
-      # TODO(manual confirmation): verify that increasing gripper opens it.
-      # The startup gripper position is only a placeholder for CLOSED;
-      # confirm actual open/closed angles and object width before grasping.
+        shoulder_pan: 0.510016
+        shoulder_lift: 0.882479
+        elbow_flex: -1.032558
+        wrist_flex: 1.704936
+        wrist_roll: -0.002473
       gripper_open:
-        gripper: 0.02
+        gripper: 1.605704
       gripper_closed:
-        gripper: 0.0
+        gripper: 0.006981
