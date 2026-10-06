@@ -1,0 +1,123 @@
+so101_tcp_pick_place:
+  ros__parameters:
+    # Fake hardware only. TCP XYZ values are verified MoveIt FK of the taught poses.
+    # This is the CAD-derived nominal TCP, not a calibrated physical grasp center.
+    target_link: tcp_link
+    target_frame: world
+    execute: false
+    stop_after_stage: PRE_GRASP
+
+    velocity_scaling: 0.1
+    acceleration_scaling: 0.1
+    planning_time: 5.0
+    state_timeout: 5.0
+    server_timeout: 10.0
+
+    # Position errors in meters; joint displacements/tolerances in radians.
+    max_fk_position_error: 0.002
+    trajectory_margin: 0.15
+    trajectory_start_tolerance: 0.01
+    trajectory_goal_tolerance: 0.001
+    home_joint_tolerance: 0.001
+    gripper_joint_tolerance: 0.001
+    max_gripper_joint_delta: 2.0
+    # Maximum IK deviation from the taught reference, per arm joint in radians.
+    # Qualification limit: do not widen automatically on failure.
+    max_reference_joint_delta: 0.1
+
+    # Qualification limits: do not widen automatically on failure.
+    stage_max_joint_delta:
+      home: 2.0
+      pre_grasp: 2.0
+      grasp: 0.5
+      lift: 0.5
+      transfer: 0.6
+      place: 0.5
+      retreat: 0.5
+
+    joint_poses:
+      home:
+        shoulder_pan: 0.0
+        shoulder_lift: 0.0
+        elbow_flex: 0.0
+        wrist_flex: 0.0
+        wrist_roll: 0.0
+      gripper_open:
+        gripper: 1.605704
+      gripper_closed:
+        gripper: 0.006981
+
+    # Taught arm postures, in radians: IK seed/reference only.
+    # These are never direct commands or the measured planning start state.
+    reference_joint_poses:
+      pre_grasp:
+        shoulder_pan: 0.000005
+        shoulder_lift: 0.932312
+        elbow_flex: -1.154156
+        wrist_flex: 1.788004
+        wrist_roll: 0.000009
+      grasp:
+        shoulder_pan: 0.0
+        shoulder_lift: 0.855067
+        elbow_flex: -0.730101
+        wrist_flex: 1.446477
+        wrist_roll: 0.0
+      lift:
+        shoulder_pan: 0.0
+        shoulder_lift: 0.888777
+        elbow_flex: -1.031116
+        wrist_flex: 1.713782
+        wrist_roll: 0.0
+      transfer:
+        shoulder_pan: 0.510016
+        shoulder_lift: 0.882479
+        elbow_flex: -1.032558
+        wrist_flex: 1.704936
+        wrist_roll: -0.002473
+      place:
+        shoulder_pan: 0.510016
+        shoulder_lift: 0.858567
+        elbow_flex: -0.727040
+        wrist_flex: 1.451906
+        wrist_roll: -0.002473
+      retreat:
+        shoulder_pan: 0.510016
+        shoulder_lift: 0.882479
+        elbow_flex: -1.032558
+        wrist_flex: 1.704936
+        wrist_roll: -0.002473
+
+    # Absolute tcp_link coordinates in world, in meters. Orientation is unconstrained.
+    tcp_poses:
+      # The taught wrist_flex is about 0.114 degrees below its upper limit.
+      # Preserve this verified PRE_GRASP target without arbitrary offsets.
+      pre_grasp:
+        x: 0.020454888551
+        y: -0.291784332482
+        z: 0.092746064114
+      grasp:
+        x: 0.020456125993
+        y: -0.291352255824
+        z: 0.054465000581
+      lift:
+        x: 0.020456212192
+        y: -0.291372856694
+        z: 0.086891589821
+      transfer:
+        x: -0.111334861640
+        y: -0.258588699035
+        z: 0.088599311176
+      place:
+        x: -0.109729046138
+        y: -0.255717774358
+        z: 0.053230237458
+      retreat:
+        x: -0.111334861640
+        y: -0.258588699035
+        z: 0.088599311176
+
+    # Diagnostics only: HOME is commanded and validated in joint space.
+    home_fk_reference:
+      x: 0.020457136050
+      y: -0.352071221464
+      z: 0.267002500152
