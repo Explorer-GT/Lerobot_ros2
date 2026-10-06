@@ -3,7 +3,7 @@
   <name>so101_grasp</name>
   <version>0.1.0</version>
   <description>SO-101 joint-space pick and place using two MoveGroupInterface clients.</description>
-  <maintainer email="hls@zju.edu.cn">hls</maintainer>
+  <maintainer email="215691450+Explorer-GT@users.noreply.github.com">Explorer-GT</maintainer>
   <license>BSD-3-Clause</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
