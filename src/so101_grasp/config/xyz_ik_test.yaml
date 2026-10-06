@@ -1,7 +1,8 @@
 so101_xyz_ik_test:
   ros__parameters:
-    # Test the gripper_link origin; this is not a calibrated grasp-center TCP.
-    target_link: gripper_link
+    # Nominal CAD-derived TCP at gripper q_ref=0, not a calibrated physical grasp center.
+    # This fixed frame does not track the grasp midpoint at other openings.
+    target_link: tcp_link
 
     # Position offsets in the RobotModel global frame, in meters.
     # Start with zero offset; change dx to 0.005 for the later 5 mm test.

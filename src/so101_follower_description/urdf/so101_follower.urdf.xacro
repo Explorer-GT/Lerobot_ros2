@@ -305,6 +305,16 @@
     </collision>
   </link>
 
+  <!-- CAD-derived nominal grasp TCP at gripper q_ref=0, not physically calibrated.
+       This fixed frame does not track the grasp midpoint at other openings. -->
+  <link name="tcp_link"/>
+
+  <joint name="gripper_to_tcp" type="fixed">
+    <parent link="gripper_link"/>
+    <child link="tcp_link"/>
+    <origin xyz="0.000150 -0.000159 -0.074598" rpy="0 0 0"/>
+  </joint>
+
   <!-- Link jaw -->
   <link name="jaw_link">
     <inertial>

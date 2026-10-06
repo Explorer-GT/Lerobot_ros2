@@ -74,7 +74,7 @@ public:
 
       // getGlobalLinkTransform() and setFromIK() both use the RobotModel frame.
       // Keep a valid seed orientation in the pose; KDL position-only IK ignores
-      // that orientation. Only the gripper_link origin is tested here.
+      // that orientation. Only the nominal CAD-derived tcp_link origin is tested here.
       Eigen::Isometry3d target_pose = measured->getGlobalLinkTransform(target_link_);
       if (!target_pose.matrix().allFinite()) {
         throw std::runtime_error("Non-finite current end-link transform");
@@ -164,8 +164,8 @@ public:
 private:
   void prepare()
   {
-    if (target_link_ != "gripper_link") {
-      throw std::runtime_error("This first-version test requires target_link=gripper_link");
+    if (target_link_ != "tcp_link") {
+      throw std::runtime_error("This nominal TCP test requires target_link=tcp_link");
     }
     arm_group_ = arm_.getRobotModel()->getJointModelGroup("arm");
     if (!arm_group_ || !arm_group_->isChain()) {
@@ -189,7 +189,7 @@ private:
     if (!solver || solver->getTipFrames().size() != 1 ||
       solver->getTipFrames().front() != target_link_)
     {
-      throw std::runtime_error("Missing IK solver or solver tip differs from gripper_link");
+      throw std::runtime_error("Missing IK solver or solver tip differs from tcp_link");
     }
     const double ik_timeout = arm_group_->getDefaultIKTimeout();
     if (!std::isfinite(ik_timeout) || ik_timeout <= 0.0) {
@@ -206,7 +206,8 @@ private:
     arm_.setNumPlanningAttempts(1);
     arm_.allowReplanning(false);
     RCLCPP_INFO(node_->get_logger(),
-      "Test link=%s (link origin, not a calibrated grasp center), frame=%s, "
+      "Test target_link=%s (nominal CAD-derived TCP, q_ref=0; "
+      "not a calibrated physical grasp center), frame=%s, "
       "IK base=%s, IK timeout=%.3f s, execute=%s",
       target_link_.c_str(), arm_.getRobotModel()->getModelFrame().c_str(),
       solver->getBaseFrame().c_str(), ik_timeout, execute_ ? "true" : "false");

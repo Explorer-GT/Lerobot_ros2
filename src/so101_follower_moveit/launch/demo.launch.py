@@ -42,13 +42,13 @@ def generate_launch_description():
         ],
     )
 
-    # Static TF
-    static_tf = Node(
-        package="tf2_ros",
-        executable="static_transform_publisher",
-        name="static_transform_publisher",
-        output="log",
-        arguments=["0.0", "0.0", "0.0", "0.0", "0.0", "0.0", "world", "base_link"],
+    # Publish robot TF using the same description as MoveIt
+    robot_state_publisher_node = Node(
+        package="robot_state_publisher",
+        executable="robot_state_publisher",
+        name="robot_state_publisher",
+        output="screen",
+        parameters=[moveit_config.robot_description],
     )
 
     # MoveGroup
@@ -92,7 +92,7 @@ def generate_launch_description():
         [
             declare_use_fake_hardware,
             rviz_node,
-            static_tf,
+            robot_state_publisher_node,
             move_group_node,
             ros2_control_node,
             so101_follower_bridge_node,
