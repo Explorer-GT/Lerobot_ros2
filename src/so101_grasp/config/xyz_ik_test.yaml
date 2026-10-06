@@ -1,0 +1,22 @@
+so101_xyz_ik_test:
+  ros__parameters:
+    # Test the gripper_link origin; this is not a calibrated grasp-center TCP.
+    target_link: gripper_link
+
+    # Position offsets in the RobotModel global frame, in meters.
+    # Start with zero offset; change dx to 0.005 for the later 5 mm test.
+    dx: 0.0
+    dy: 0.0
+    dz: 0.0
+
+    # IK/FK/Plan only by default. Enable explicitly for fake-hardware execution.
+    execute: false
+
+    velocity_scaling: 0.1
+    acceleration_scaling: 0.1
+
+    state_timeout: 5.0
+
+    # Absolute per-joint displacement in radians; FK error in meters.
+    max_ik_joint_delta: 0.5
+    max_fk_position_error: 0.002
